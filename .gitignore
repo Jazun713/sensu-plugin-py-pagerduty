@@ -1,3 +1,7 @@
+#Secrets
+api.key
+pagerduty/api.key
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
