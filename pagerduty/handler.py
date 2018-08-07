@@ -27,7 +27,7 @@ class PagerdutyHandler(SensuHandler):
             '-a',
             '--api_key',
             required = False,
-            default = '/etc/sensu/bin/sensu-plugin-py-pagerduty/pagerduty/api.key',
+            default = './api.key',
             help = 'The path where the PagerDuty API key file is stored'
         )
         (self.options, self.remain) = self.parser.parse_known_args()
@@ -35,8 +35,6 @@ class PagerdutyHandler(SensuHandler):
         key_path = vars(self.options)["api_key"]
         pypd.set_api_key_from_file(key_path)
         super(PagerdutyHandler, self).__init__()
-        #settings = self.settings 
-        #event = self.event
 
     def incident_key(self, settings=None, event=None):
         if not settings:
