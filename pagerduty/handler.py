@@ -6,7 +6,7 @@
 
 from __future__ import print_function
 from sensu_plugin import SensuHandler
-from sensu_plugin.utils import get_settings
+import sensu_plugin.utils as sensu_settings
 import json, sys
 import pypd
 import argparse
@@ -31,10 +31,10 @@ class PagerdutyHandler(SensuHandler):
             help = 'The path where the PagerDuty API key file is stored'
         )
         (self.options, self.remain) = self.parser.parse_known_args()
-        settings = get_settings()
         self.config = vars(self.options)["json_config"]
         key_path = vars(self.options)["api_key"]
         pypd.set_api_key_from_file(key_path)
+        super(PagerdutyHandler, self).__init__()
 
     def incident_key(self, settings=None, event=None):
         if not settings:
@@ -225,4 +225,3 @@ class PagerdutyHandler(SensuHandler):
 
 if __name__ == '__main__':
     f = PagerdutyHandler()
-    f.handle()
