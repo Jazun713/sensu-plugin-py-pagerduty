@@ -25,7 +25,7 @@ options = {
         'Topic :: Software Development :: Libraries',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    'install_requires': ['requests', 'six'],
+    'install_requires': ['requests', 'six', 'sensu_plugin', 'pypd'],
     'tests_require': ['pep8','pylint'],
     'cmdclass': {}
 }

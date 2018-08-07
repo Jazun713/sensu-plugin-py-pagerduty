@@ -1,5 +1,4 @@
 
-import mock
 import unittest
 from pagerduty.handler import PagerdutyHandler
 
