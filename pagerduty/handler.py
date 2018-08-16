@@ -6,12 +6,10 @@
 
 from __future__ import print_function
 from sensu_plugin import SensuHandler
-import sensu_plugin.utils as sensu_settings
 import json, sys
 import pypd
 import argparse
 import logging
-
 
 class PagerdutyHandler(SensuHandler):
     def __init__(self):
@@ -36,11 +34,15 @@ class PagerdutyHandler(SensuHandler):
         pypd.set_api_key_from_file(key_path)
         super(PagerdutyHandler, self).__init__()
 
-    def incident_key(self, settings=None, event=None):
-        if not settings:
-            settings = self.settings
-        if not event:
-            event = self.event
+    def grab_settings(self):
+        return self.settings
+
+    def grab_event(self):
+        return self.event
+
+    def incident_key(self):
+        settings = self.grab_settings()
+        event = self.grab_event()
         try:
             source = event['check']['source']
             incident_id = '/'.join([source, event['check']['name'], event['client']['name']])
@@ -56,11 +58,9 @@ class PagerdutyHandler(SensuHandler):
             incident_id = incident_id.gsub(Regexp.new(key), val)
         return incident_id
 
-    def api_key(self, settings=None, event=None):
-        if not settings:
-            settings = self.settings
-        if not event:
-            event = self.event
+    def api_key(self):
+        settings = self.grab_settings()
+        event = self.grab_event()
         try:
             api_key = settings[self.config]['api_key']
         except KeyError:
@@ -87,11 +87,9 @@ class PagerdutyHandler(SensuHandler):
             api_key = settings[self.config]['api_key']
         return api_key
 
-    def proxy_settings(self, settings=None, event=None):
-        if not settings:
-            settings = self.settings
-        if not event:
-            event = self.event
+    def proxy_settings(self):
+        settings = self.grab_settings()
+        event = self.grab_event()
         proxy_settings = {}
 
         try:
@@ -112,41 +110,66 @@ class PagerdutyHandler(SensuHandler):
             proxy_settings['proxy_password'] = ''
         return proxy_settings
 
-    def contexts(self, settings=None, event=None):
-        if not settings:
-            settings = self.settings
-        if not event:
-            event = self.event
+    def contexts(self):
+        settings = self.grab_settings()
+        event = self.grab_event()
         try:
-            contexts = event['check']['pagerduty_contexts']
-        except KeyError:
-            contexts = None
+            output_status = event['check']['output']['status']
+        except KeyError: # If output is a dictionary but status doesn't exist
+            output_status = None
+        except TypeError: # If output is just a string
+            output_status = None
+
+        try:
+            output_details = event['check']['output']['details']
+        except KeyError: # If output is a dictionary but details doesn't exist
+            output_details = event['check']['output']
+        except TypeError: # If details is just a string
+            output_details = event['check']['output']
+            output_details.strip()
+
+        try:
+            pdcontexts = event['check']['pagerduty_contexts']
+            if output_status:
+                contexts = {
+                               'Details': output_details,
+                               'Status': output_status,
+                               'Contexts': pdcontexts
+                           }
+            else:
+                contexts = {
+                               'Details': output_details,
+                               'Contexts': pdcontexts
+                           }
+        except KeyError: # pagerduty_contexts not set in check definition
+            if output_status:
+                contexts = {
+                               'Details': output_details,
+                               'Status': output_status,
+                           }
+            else:
+                contexts = output_details
         return contexts
 
-    def description_prefix(self, settings=None, event=None):
+    def description_prefix(self):
     # dyanamic_description_prefix_key is attempting to match a key from the client config which is passed into the event data.
     # If this key doesn't exist we try to set it to the static prefix defined in the server side config (i.e. conf.d/pagerduty.json) --
     # using the key 'description_prefix'.  This can be any static value you want to have in front of the event summary in pagerduty.
 
-        if not settings:
-            settings = self.settings
-        if not event:
-            event = self.event
+        settings = self.grab_settings()
+        event = self.grab_event()
         try:
             description_prefix = event['client'][settings[self.config]['dynamic_description_prefix_key']]
-        except KeyError:
+        except KeyError: # description prefix not set on the client config
             try:
                 description_prefix = settings[self.config]['description_prefix']
-            except KeyError:
+            except KeyError: # description prefix not set in the check config
                 description_prefix = None
         return description_prefix
 
-    def handle(self, settings=None, event=None):
-        if not settings:
-            settings = self.settings
-        if not event:
-            event = self.event
-        print(event['action'])
+    def handle(self):
+        settings = self.grab_settings()
+        event = self.grab_event()
         if settings[self.config] == None:
             sys.exit('HANDLER: invalid config: {settings[self.config] !r} you need to pass a key and not a file')
         incident_key = self.incident_key()
@@ -155,7 +178,7 @@ class PagerdutyHandler(SensuHandler):
         try:
             incident_key_prefix = settings[self.config]['incident_key_prefix']
             incident_key = '/'.join([incident_key_prefix, incident_key()])
-        except KeyError:
+        except KeyError: # dedup key prefix not set in handler config, ignore
             pass
 
         # This needs testing
@@ -178,7 +201,14 @@ class PagerdutyHandler(SensuHandler):
                   links = event['check']['links']
               except KeyError:
                   links = None
-              event_summary = " ".join([description_prefix, event['check']['output']])
+              try:
+                  _summary = event['check']['output']['summary']
+              except KeyError: # If output is a dict but summary doesn't exist
+                  _summary = event['check']['output']
+              except TypeError: # if output is a string
+                  _summary = event['check']['output']
+                  _summary.strip()
+              event_summary = " ".join(['(', description_prefix, ')', _summary])
               try:
                   assert( severity in ['critical', 'error', 'warning', 'info'] )
               except AssertionError:
