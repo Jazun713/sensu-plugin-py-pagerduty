@@ -246,7 +246,7 @@ class PagerdutyHandler(SensuHandler):
 
           elif event['action'] == 'resolve':
               try:
-                  svc_email = settings[self.config]['svc_email']
+                  svc_email = settings['handlers']['py-pagerduty']['svc_email']
               except KeyError:
                   sys.exit('HANDLER: A service email (svc_email) must be set in the handler config JSON on your server.\nHANDLER: Resolve not sent!')
               incidents = pypd.Incident.find(incident_key=incident_key, statuses=['triggered', 'acknowledged'])
