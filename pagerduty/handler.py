@@ -6,6 +6,7 @@
 
 from __future__ import print_function
 from sensu_plugin import SensuHandler
+import ast
 import json, sys
 import pypd
 import argparse
@@ -121,7 +122,7 @@ class PagerdutyHandler(SensuHandler):
             output_status = None
 
         try:
-            output_details = event['check']['output']['details']
+            output_details = event['check']['output']['Details']
         except KeyError: # If output is a dictionary but details doesn't exist
             output_details = event['check']['output']
         except TypeError: # If details is just a string
@@ -202,8 +203,9 @@ class PagerdutyHandler(SensuHandler):
               except KeyError:
                   links = None
               try:
-                  _summary = event['check']['output']['summary']
-              except KeyError: # If output is a dict but summary doesn't exist
+                  _output = ast.literal_eval(event['check']['output'])
+                  _summary = _output['Summary']
+              except KeyError as e: # If output is a dict but summary doesn't exist
                   _summary = event['check']['output']
               except TypeError: # if output is a string
                   _summary = event['check']['output']
