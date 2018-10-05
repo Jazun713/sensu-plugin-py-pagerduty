@@ -115,14 +115,16 @@ class PagerdutyHandler(SensuHandler):
         settings = self.grab_settings()
         event = self.grab_event()
         try:
-            output_status = event['check']['output']['status']
+            _output = ast.literal_eval(event['check']['output'])
+            output_status = _output['Status']
         except KeyError: # If output is a dictionary but status doesn't exist
             output_status = None
         except TypeError: # If output is just a string
             output_status = None
 
         try:
-            output_details = event['check']['output']['Details']
+            _output = ast.literal_eval(event['check']['output'])
+            output_details = _output['Details']
         except KeyError: # If output is a dictionary but details doesn't exist
             output_details = event['check']['output']
         except TypeError: # If details is just a string
