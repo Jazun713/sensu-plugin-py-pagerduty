@@ -112,28 +112,18 @@ class PagerdutyHandler(SensuHandler):
     def contexts(self):
         event = self.grab_event()
         try:
-<<<<<<< Updated upstream
-            _output = ast.literal_eval(event['check']['output'])
-            output_status = _output['Status']
-=======
             outputs = json.loads(event['check']['output'])
         except ValueError:
             outputs = event['check']['output']
         try:
             output_status = outputs['Status']
->>>>>>> Stashed changes
         except KeyError: # If output is a dictionary but status doesn't exist
             output_status = None
         except TypeError: # If output is just a string
             output_status = None
 
         try:
-<<<<<<< Updated upstream
-            _output = ast.literal_eval(event['check']['output'])
-            output_details = _output['Details']
-=======
             output_details = outputs['Details']
->>>>>>> Stashed changes
         except KeyError: # If output is a dictionary but details doesn't exist
             output_details = outputs
         except TypeError: # If details is just a string
