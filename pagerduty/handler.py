@@ -163,7 +163,7 @@ class PagerdutyHandler(SensuHandler):
         try:
             if event['client'][settings[self.config]['dynamic_description_prefix_key']] == "Appliance_Metrics":
                 description_prefix = event['check'][settings[self.config]['dynamic_description_prefix_key']]
-                description_prefix = description_prefix.split('_')[-1].upper() + " " + description_prefix.split('_')[-2].title()
+                description_prefix = description_prefix.split('_')[-1].upper() + " " + description_prefix.split('_')[-2]
             else:
                 description_prefix = event['client'][settings[self.config]['dynamic_description_prefix_key']]
         except KeyError: # description prefix not set on the client config
