@@ -364,9 +364,9 @@ class TestPagerdutyHandler(unittest.TestCase):
         settings = self.settings_no_teams()
         event = self.event_no_teams()
         event['check']['output'] = {
-            'summary': 'No keepalive sent from client',
-            'details': 'No keepalive sent from client for 1337 seconds (>=300)',
-            'status': 'ping results: 100% packet loss'
+            'Summary': 'No keepalive sent from client',
+            'Details': 'No keepalive sent from client for 1337 seconds (>=300)',
+            'Status': 'ping results: 100% packet loss'
         }
         event['check']['pagerduty_contexts'] = ['This is a pd context', 'This is another pd context']
         stdin = mock_stdin.read.return_value = json.dumps(event)
