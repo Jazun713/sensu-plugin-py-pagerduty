@@ -6,7 +6,6 @@
 
 from __future__ import print_function
 from sensu_plugin import SensuHandler
-import ast
 import json, sys
 import pypd
 import argparse
@@ -90,7 +89,6 @@ class PagerdutyHandler(SensuHandler):
 
     def proxy_settings(self):
         settings = self.grab_settings()
-        event = self.grab_event()
         proxy_settings = {}
 
         try:
@@ -112,21 +110,32 @@ class PagerdutyHandler(SensuHandler):
         return proxy_settings
 
     def contexts(self):
-        settings = self.grab_settings()
         event = self.grab_event()
         try:
+<<<<<<< Updated upstream
             _output = ast.literal_eval(event['check']['output'])
             output_status = _output['Status']
+=======
+            outputs = json.loads(event['check']['output'])
+        except ValueError:
+            outputs = event['check']['output']
+        try:
+            output_status = outputs['Status']
+>>>>>>> Stashed changes
         except KeyError: # If output is a dictionary but status doesn't exist
             output_status = None
         except TypeError: # If output is just a string
             output_status = None
 
         try:
+<<<<<<< Updated upstream
             _output = ast.literal_eval(event['check']['output'])
             output_details = _output['Details']
+=======
+            output_details = outputs['Details']
+>>>>>>> Stashed changes
         except KeyError: # If output is a dictionary but details doesn't exist
-            output_details = event['check']['output']
+            output_details = outputs
         except TypeError: # If details is just a string
             output_details = event['check']['output']
             output_details.strip()
@@ -162,17 +171,25 @@ class PagerdutyHandler(SensuHandler):
         settings = self.grab_settings()
         event = self.grab_event()
         try:
-            description_prefix = event['client'][settings[self.config]['dynamic_description_prefix_key']]
+            if event['client'][settings[self.config]['dynamic_description_prefix_key']] == "Appliance_Metrics":
+                description_prefix = event['check'][settings[self.config]['dynamic_description_prefix_key']]
+                description_prefix = description_prefix.split('_')[-1].upper() + " " + description_prefix.split('_')[-2].title()
+            else:
+                description_prefix = event['client'][settings[self.config]['dynamic_description_prefix_key']]
         except KeyError: # description prefix not set on the client config
             try:
                 description_prefix = settings[self.config]['description_prefix']
             except KeyError: # description prefix not set in the check config
-                description_prefix = None
+                description_prefix = ""
         return description_prefix
 
     def handle(self):
         settings = self.grab_settings()
         event = self.grab_event()
+        try:
+            outputs = json.loads(event['check']['output'])
+        except ValueError:
+            outputs = event['check']['output']
         if settings[self.config] == None:
             sys.exit('HANDLER: invalid config: {settings[self.config] !r} you need to pass a key and not a file')
         incident_key = self.incident_key()
@@ -205,10 +222,9 @@ class PagerdutyHandler(SensuHandler):
               except KeyError:
                   links = None
               try:
-                  _output = ast.literal_eval(event['check']['output'])
-                  _summary = _output['Summary']
-              except KeyError as e: # If output is a dict but summary doesn't exist
-                  _summary = event['check']['output']
+                  _summary = outputs['Summary']
+              except KeyError: # If output is a dict but summary doesn't exist
+                  _summary = outputs
               except TypeError: # if output is a string
                   _summary = event['check']['output']
                   _summary.strip()
