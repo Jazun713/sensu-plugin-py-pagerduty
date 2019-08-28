@@ -89,7 +89,6 @@ class PagerdutyHandler(SensuHandler):
 
     def proxy_settings(self):
         settings = self.grab_settings()
-        event = self.grab_event()
         proxy_settings = {}
 
         try:
@@ -111,19 +110,25 @@ class PagerdutyHandler(SensuHandler):
         return proxy_settings
 
     def contexts(self):
-        settings = self.grab_settings()
         event = self.grab_event()
         try:
-            output_status = event['check']['output']['status']
+            outputs = event['check']['output']
+        except ValueError:
+            outputs = event['check']['output']
+        except TypeError:
+            outputs = json.loads(event['check']['output'])
+
+        try:
+            output_status = outputs['Status']
         except KeyError: # If output is a dictionary but status doesn't exist
             output_status = None
         except TypeError: # If output is just a string
             output_status = None
 
         try:
-            output_details = event['check']['output']['details']
+            output_details = outputs['Details']
         except KeyError: # If output is a dictionary but details doesn't exist
-            output_details = event['check']['output']
+            output_details = outputs
         except TypeError: # If details is just a string
             output_details = event['check']['output']
             output_details.strip()
@@ -159,17 +164,28 @@ class PagerdutyHandler(SensuHandler):
         settings = self.grab_settings()
         event = self.grab_event()
         try:
-            description_prefix = event['client'][settings[self.config]['dynamic_description_prefix_key']]
+            if event['client'][settings[self.config]['dynamic_description_prefix_key']] == "Appliance_Metrics":
+                description_prefix = event['check'][settings[self.config]['dynamic_description_prefix_key']]
+                description_prefix = description_prefix.split('_')[-1].upper() + " " + description_prefix.split('_')[-2]
+            else:
+                description_prefix = event['client'][settings[self.config]['dynamic_description_prefix_key']]
         except KeyError: # description prefix not set on the client config
             try:
                 description_prefix = settings[self.config]['description_prefix']
             except KeyError: # description prefix not set in the check config
-                description_prefix = None
+                description_prefix = ""
         return description_prefix
 
     def handle(self):
         settings = self.grab_settings()
         event = self.grab_event()
+        try:
+            outputs = event['check']['output']
+        except ValueError:
+            outputs = event['check']['output']
+        except TypeError:
+            outputs = json.loads(event['check']['output'])
+
         if settings[self.config] == None:
             sys.exit('HANDLER: invalid config: {settings[self.config] !r} you need to pass a key and not a file')
         incident_key = self.incident_key()
@@ -201,14 +217,51 @@ class PagerdutyHandler(SensuHandler):
                   links = event['check']['links']
               except KeyError:
                   links = None
+
+              if type(links) is str:
+                  _links = []
+                  if '{' not in links:
+                      if 'href' not in links:
+                          _links.append({'href': links})
+                          links = _links
+                      elif links.find('href') == 0: # If href is at the beginning of links
+                          if links.find(':') >= 4 and links.find(':') <= 6: # If a colon is immediately after href
+                              s = links.split(":")
+                              links = _links.append({'href':s[1]})
+                          elif links.find('=') >= 4 and links.find('=') <=6: # If an equals sign is immediately after href
+                              s = links.split("=")
+                              links = _links.append({'href':s[1]})
+                          else: # If href at the beginning but we don't know what's after we just push links back into the value without href
+                              links = _links.append({'href':links[4:]})
+                      else: # If href is in the string but not at the beginning we push links into the value as is.
+                          links = _links.append({'href':links})
+              elif type(links) is list:
+                  length = len(links)
+                  for i in range(length):
+                      try:
+                          _links = links[i]['href']
+                      except KeyError:
+                          links[i] = {'href': links[i]}
+                      except TypeError:
+                          links[i] = {'href': links[i]}
+
+              elif type(links) is dict:
+                  _links = []
+                  if 'href' in links.keys():
+                      links = _links.append(links)
+                  else:
+                      logging.warning("HANDLER: links is missing required key 'href': %s.", links)
+                      links = "things"
+
               try:
-                  _summary = event['check']['output']['summary']
+                  _summary = outputs['Summary']
               except KeyError: # If output is a dict but summary doesn't exist
-                  _summary = event['check']['output']
+                  _summary = outputs
               except TypeError: # if output is a string
                   _summary = event['check']['output']
                   _summary.strip()
               event_summary = " ".join(['(', description_prefix, ')', _summary])
+              #event_summary = _summary
               try:
                   assert( severity in ['critical', 'error', 'warning', 'info'] )
               except AssertionError:
