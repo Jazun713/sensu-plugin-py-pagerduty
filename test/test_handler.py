@@ -400,9 +400,9 @@ class TestPagerdutyHandler(unittest.TestCase):
         settings = self.settings_no_teams()
         event = self.event_no_teams()
         event['check']['output'] = {
-            'summary': 'No keepalive sent from client',
-            'details': 'No keepalive sent from client for 1337 seconds (>=300)',
-            'status': 'ping results: 100% packet loss'
+            'Summary': 'No keepalive sent from client',
+            'Details': 'No keepalive sent from client for 1337 seconds (>=300)',
+            'Status': 'ping results: 100% packet loss'
         }
         stdin = mock_stdin.read.return_value = json.dumps(event)
         mock_event = mock_grab_event.return_value = event
@@ -434,8 +434,8 @@ class TestPagerdutyHandler(unittest.TestCase):
         settings = self.settings_no_teams()
         event = self.event_no_teams()
         event['check']['output'] = {
-            'summary': 'No keepalive sent from client',
-            'details': 'No keepalive sent from client for 1337 seconds (>=300)'
+            'Summary': 'No keepalive sent from client',
+            'Details': 'No keepalive sent from client for 1337 seconds (>=300)'
         }
         stdin = mock_stdin.read.return_value = json.dumps(event)
         mock_event = mock_grab_event.return_value = event
@@ -456,6 +456,117 @@ class TestPagerdutyHandler(unittest.TestCase):
                 'group': None,
                 'component': None,
                 'custom_details': 'No keepalive sent from client for 1337 seconds (>=300)'
+             }}
+        logging.debug("Event called with pypd.EventV2.create(data=" + json.dumps(payload))
+        mock_event_create.assert_called_with(data=payload)
+
+    def test_handle_links_as_string(self, mock_stdin, mock_grab_settings, mock_grab_event, mock_event_create):
+        settings = self.settings_no_teams()
+        event = self.event_no_teams()
+        event['check']['output'] = {
+            'Summary': 'No keepalive sent from client',
+            'Details': 'No keepalive sent from client for 1337 seconds (>=300)',
+            'Status': 'ping results: 100% packet loss'
+        }
+        event['check']['pagerduty_contexts'] = ['This is a pd context', 'This is another pd context']
+        event['check']['links'] = 'https://sensu.io'
+        stdin = mock_stdin.read.return_value = json.dumps(event)
+        mock_event = mock_grab_event.return_value = event
+        mock_settings = mock_grab_settings.return_value = settings
+        handler = PagerdutyHandler()
+        payload = {}
+        payload = {
+            'routing_key': 'default_key',
+            'event_action': 'trigger',
+            'dedup_key': 'keepalive/test_client',
+            'images': None,
+            'links': [{"href": "https://sensu.io"}],
+            'payload': {
+                'summary': '( test_client ) No keepalive sent from client',
+                'severity': 'error',
+                'source': 'test_client',
+                'class': None,
+                'group': None,
+                'component': None,
+                'custom_details': {
+                                    'Status': 'ping results: 100% packet loss',
+                                    'Contexts': ['This is a pd context', 'This is another pd context'],
+                                    'Details': 'No keepalive sent from client for 1337 seconds (>=300)'
+                                  }
+             }}
+        logging.debug("Event called with pypd.EventV2.create(data=" + json.dumps(payload))
+        mock_event_create.assert_called_with(data=payload)
+
+    def test_handle_links_as_list(self, mock_stdin, mock_grab_settings, mock_grab_event, mock_event_create):
+        settings = self.settings_no_teams()
+        event = self.event_no_teams()
+        event['check']['output'] = {
+            'Summary': 'No keepalive sent from client',
+            'Details': 'No keepalive sent from client for 1337 seconds (>=300)',
+            'Status': 'ping results: 100% packet loss'
+        }
+        event['check']['pagerduty_contexts'] = ['This is a pd context', 'This is another pd context']
+        event['check']['links'] = ['https://sensu.io', 'https://example.com']
+        stdin = mock_stdin.read.return_value = json.dumps(event)
+        mock_event = mock_grab_event.return_value = event
+        mock_settings = mock_grab_settings.return_value = settings
+        handler = PagerdutyHandler()
+        payload = {}
+        payload = {
+            'routing_key': 'default_key',
+            'event_action': 'trigger',
+            'dedup_key': 'keepalive/test_client',
+            'images': None,
+            'links': [{"href": "https://sensu.io"}, {"href": "https://example.com"}],
+            'payload': {
+                'summary': '( test_client ) No keepalive sent from client',
+                'severity': 'error',
+                'source': 'test_client',
+                'class': None,
+                'group': None,
+                'component': None,
+                'custom_details': {
+                                    'Status': 'ping results: 100% packet loss',
+                                    'Contexts': ['This is a pd context', 'This is another pd context'],
+                                    'Details': 'No keepalive sent from client for 1337 seconds (>=300)'
+                                  }
+             }}
+        logging.debug("Event called with pypd.EventV2.create(data=" + json.dumps(payload))
+        mock_event_create.assert_called_with(data=payload)
+
+    def test_handle_links_as_dict(self, mock_stdin, mock_grab_settings, mock_grab_event, mock_event_create):
+        settings = self.settings_no_teams()
+        event = self.event_no_teams()
+        event['check']['output'] = {
+            'Summary': 'No keepalive sent from client',
+            'Details': 'No keepalive sent from client for 1337 seconds (>=300)',
+            'Status': 'ping results: 100% packet loss'
+        }
+        event['check']['pagerduty_contexts'] = ['This is a pd context', 'This is another pd context']
+        event['check']['links'] = [{'href':'https://sensu.io', 'text':'Runbook'}]
+        stdin = mock_stdin.read.return_value = json.dumps(event)
+        mock_event = mock_grab_event.return_value = event
+        mock_settings = mock_grab_settings.return_value = settings
+        handler = PagerdutyHandler()
+        payload = {}
+        payload = {
+            'routing_key': 'default_key',
+            'event_action': 'trigger',
+            'dedup_key': 'keepalive/test_client',
+            'images': None,
+            'links': [{"href": "https://sensu.io", "text": "Runbook"}],
+            'payload': {
+                'summary': '( test_client ) No keepalive sent from client',
+                'severity': 'error',
+                'source': 'test_client',
+                'class': None,
+                'group': None,
+                'component': None,
+                'custom_details': {
+                                    'Status': 'ping results: 100% packet loss',
+                                    'Contexts': ['This is a pd context', 'This is another pd context'],
+                                    'Details': 'No keepalive sent from client for 1337 seconds (>=300)'
+                                  }
              }}
         logging.debug("Event called with pypd.EventV2.create(data=" + json.dumps(payload))
         mock_event_create.assert_called_with(data=payload)

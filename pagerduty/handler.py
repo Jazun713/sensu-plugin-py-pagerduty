@@ -112,9 +112,12 @@ class PagerdutyHandler(SensuHandler):
     def contexts(self):
         event = self.grab_event()
         try:
-            outputs = json.loads(event['check']['output'])
+            outputs = event['check']['output']
         except ValueError:
             outputs = event['check']['output']
+        except TypeError:
+            outputs = json.loads(event['check']['output'])
+            
         try:
             output_status = outputs['Status']
         except KeyError: # If output is a dictionary but status doesn't exist
@@ -177,9 +180,12 @@ class PagerdutyHandler(SensuHandler):
         settings = self.grab_settings()
         event = self.grab_event()
         try:
-            outputs = json.loads(event['check']['output'])
+            outputs = event['check']['output']
         except ValueError:
             outputs = event['check']['output']
+        except TypeError:
+            outputs = json.loads(event['check']['output'])
+
         if settings[self.config] == None:
             sys.exit('HANDLER: invalid config: {settings[self.config] !r} you need to pass a key and not a file')
         incident_key = self.incident_key()
@@ -211,6 +217,42 @@ class PagerdutyHandler(SensuHandler):
                   links = event['check']['links']
               except KeyError:
                   links = None
+
+              if type(links) is str:
+                  _links = []
+                  if '{' not in links:
+                      if 'href' not in links:
+                          _links.append({'href': links})
+                          links = _links
+                      elif links.find('href') == 0: # If href is at the beginning of links
+                          if links.find(':') >= 4 and links.find(':') <= 6: # If a colon is immediately after href
+                              s = links.split(":")
+                              links = _links.append({'href':s[1]})
+                          elif links.find('=') >= 4 and links.find('=') <=6: # If an equals sign is immediately after href
+                              s = links.split("=")
+                              links = _links.append({'href':s[1]})
+                          else: # If href at the beginning but we don't know what's after we just push links back into the value without href
+                              links = _links.append({'href':links[4:]})
+                      else: # If href is in the string but not at the beginning we push links into the value as is.
+                          links = _links.append({'href':links})
+              elif type(links) is list:
+                  length = len(links)
+                  for i in range(length):
+                      try:
+                          _links = links[i]['href']
+                      except KeyError:
+                          links[i] = {'href': links[i]}
+                      except TypeError:
+                          links[i] = {'href': links[i]}
+
+              elif type(links) is dict:
+                  _links = []
+                  if 'href' in links.keys():
+                      links = _links.append(links)
+                  else:
+                      logging.warning("HANDLER: links is missing required key 'href': %s.", links)
+                      links = "things"
+
               try:
                   _summary = outputs['Summary']
               except KeyError: # If output is a dict but summary doesn't exist
@@ -219,6 +261,7 @@ class PagerdutyHandler(SensuHandler):
                   _summary = event['check']['output']
                   _summary.strip()
               event_summary = " ".join(['(', description_prefix, ')', _summary])
+              #event_summary = _summary
               try:
                   assert( severity in ['critical', 'error', 'warning', 'info'] )
               except AssertionError:
