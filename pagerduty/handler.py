@@ -117,7 +117,7 @@ class PagerdutyHandler(SensuHandler):
             outputs = event['check']['output']
         except TypeError:
             outputs = json.loads(event['check']['output'])
-
+            
         try:
             output_status = outputs['Status']
         except KeyError: # If output is a dictionary but status doesn't exist
