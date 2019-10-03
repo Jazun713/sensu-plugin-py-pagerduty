@@ -79,7 +79,7 @@
 		"issued": 1566930097,
 		"executed": 1566930098,
 		"duration": 0.162,
-		"output": "[' test test ']\r\n",
+		"output": "{\"Status\":\"Status Message Here\",{\"Details\":{\"example_1\": {\"F5Status\": \"up\",\"F5EnabledStatus\": \"enabled\",\"AppPoolStatus\": \"up\"},\"example_2\": {\"F5Status\": \"down\",\"F5EnabledStatus\": \"enabled\",\"AppPoolStatus\": \"down\"}},\"Summary\":\"You have 1 F5 pools in a down state\"}",
 		"status": 1,
 		"type": "standard",
 		"history": [
