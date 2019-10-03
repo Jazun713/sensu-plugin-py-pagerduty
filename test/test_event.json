@@ -1,0 +1,119 @@
+{
+	"client": {
+		"name": "example_1",
+		"address": "192.168.1.100",
+		"keepalive": {
+			"handler": "sensu_deregister",
+			"thresholds": {
+				"critical": 302400,
+				"warning": 300
+			}
+		},
+		"metrics": {
+			"cpu": {
+				"crit": 100,
+				"warning": 90
+			},
+			"disk": {
+				"crit": 2,
+				"warning": 5
+			},
+			"memory": {
+				"crit": 100,
+				"warning": 90
+			}
+		},
+		"Creds": {
+			"Influx": {
+				"Pass": "REDACTED",
+				"User": "REDACTED"
+			},
+			"Salt": {
+				"Pass": "REDACTED",
+				"User": "REDACTED"
+			}
+		},
+		"F5Pools": {
+			"test": {
+				"qa": {
+					"app_pool": "test-data",
+					"name": "api.example.com.http"
+				}
+			}
+		},
+		"pools": {},
+		"python_path": "c:\\salt\\bin\\python.exe",
+		"services": {
+			"newrelic": {
+				"service": "nrsvrmon"
+			},
+			"octopus-deploy": {
+				"service": "OctopusDeploy Tentacle"
+			}
+		},
+		"subscriptions": [
+			"win-svc-metrics",
+			"octopus-deploy-service",
+			"newrelic-service",
+			"host-checks",
+			"host-metrics",
+			"check_f5_test_qa",
+			"client:example_1"
+		],
+		"version": "1.6.1",
+		"timestamp": 1566930084
+	},
+	"check": {
+		"command": "/etc/sensu/plugins/apppool_monitor --f5Pool ",
+		"interval": 30,
+		"subscribers": [
+			"f5_test-qa"
+		],
+		"pager_team": "JasonTest",
+		"occurrences": 2,
+		"handlers": [
+			"py-pagerduty",
+			"metrics"
+		],
+		"name": "check_f5_test_qa",
+		"issued": 1566930097,
+		"executed": 1566930098,
+		"duration": 0.162,
+		"output": "[' test test ']\r\n",
+		"status": 1,
+		"type": "standard",
+		"history": [
+			"1",
+			"1",
+			"1",
+			"1",
+			"1",
+			"1",
+			"1",
+			"1",
+			"1",
+			"1",
+			"1",
+			"1",
+			"1",
+			"1",
+			"1",
+			"1",
+			"1",
+			"1",
+			"1",
+			"1",
+			"1"
+		],
+		"total_state_change": 0
+	},
+	"occurrences": 6873,
+	"occurrences_watermark": 17274,
+	"action": "create",
+	"timestamp": 1566930098,
+	"id": "c089d11d-64d5-4830-8035-263ca16cd565",
+	"last_state_change": 1566723932,
+	"last_ok": 1565435463,
+	"silenced": false,
+	"silenced_by": []
+}
